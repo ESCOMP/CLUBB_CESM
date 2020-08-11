@@ -502,6 +502,17 @@ contains
     thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
     wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
     sclrm,   &
+!+++ARH
+  ! EDMF in/out
+    pblh, ustar, &                                       ! intent(inout)
+    mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
+    mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  & ! intent(inout)
+    mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &        ! intent(inout)
+    mf_moist_qc, mf_thlflx, mf_qtflx,  &                 ! intent(inout)
+    s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, &       ! intent(inout)
+    s_awu, s_awv, &                                      ! intent(inout)
+  ! back to CLUBB stuff
+!---ARH
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16    ! intent(inout)
 #endif
@@ -680,8 +691,22 @@ contains
       sclrm_trsport_only  ! Passive scalar concentration due to pure transport [{units vary}/s]
 #endif
 
-      real( kind = core_rknd ), intent(inout), dimension(gr%nz,edsclr_dim) :: &
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz,edsclr_dim) :: &
       edsclrm   ! Eddy passive scalar mean (thermo. levels)   [units vary]
+
+!+++ARH
+    ! EDMF inputs not otherwise in CLUBB variable list
+    real( kind = core_rknd ), intent(inout) :: &
+      pblh, ustar
+
+    ! MKW EDMF outputs
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz) :: &
+      mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &
+      mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  &
+      mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &
+      mf_moist_qc, mf_thlflx, mf_qtflx,  &
+      s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, s_awu, s_awv
+!---ARH
 
     real( kind = core_rknd ), intent(out), dimension(gr%nz) ::  &
       rcm_in_layer, & ! rcm in cloud layer                              [kg/kg]
@@ -735,6 +760,15 @@ contains
       thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
       wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
       sclrm,   &
+!+++ARH
+      pblh, ustar, &                                          ! intent(inout)
+      mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &           ! intent(inout)
+      mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  &    ! intent(inout)
+      mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &           ! intent(inout)
+      mf_moist_qc, mf_thlflx, mf_qtflx,  &                    ! intent(inout)
+      s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, &          ! intent(inout)
+      s_awu, s_awv, &                                         ! intent(inout)
+!---ARH
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16      ! intent(inout)
 #endif
