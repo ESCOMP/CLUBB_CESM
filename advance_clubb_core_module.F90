@@ -145,7 +145,7 @@ module advance_clubb_core_module
                sclrm,   &                                           ! intent(inout)
 !+++ARH
                ! EDMF in/out
-               pblh, ustar, &                                       ! intent(inout) since pblh is modified; can change to in later
+               pblh, mf_ustar, &                                    ! intent(inout) since pblh is modified; can change to in later
                mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
                mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  & ! intent(inout)
                mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &        ! intent(inout)
@@ -626,7 +626,7 @@ module advance_clubb_core_module
 !+++ARH
     ! EDMF inputs not otherwise in CLUBB input list
     real( kind = core_rknd ), intent(inout) :: & 
-      pblh, ustar
+      pblh, mf_ustar
 
     ! EDMF outputs
     ! mf_* are diagnostic variables
@@ -1435,7 +1435,7 @@ module advance_clubb_core_module
          call edmf( gr%nz,   dt,          gr%zt,      gr%dzt,      &
                   p_in_Pa,   exner,       nup,        um,    vm,   &
                   thm,       thlm, thlm_zm,  thvm,    rtm, rtm_zm, &
-                  ustar,     wpthlp_sfc,  wprtp_sfc,  pblh,  rcm,  & ! ustar and pblh are not computed until end of timestep...
+                  mf_ustar,     wpthlp_sfc,  wprtp_sfc,  pblh,  rcm,  & ! ustar and pblh are not computed until end of timestep...
                   mf_dry_a,  mf_moist_a,  mf_dry_w,   mf_moist_w,                &
                   mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,              &
                   mf_dry_u,  mf_moist_u,  mf_dry_v,   mf_moist_v,   mf_moist_qc, &
