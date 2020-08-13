@@ -504,7 +504,7 @@ contains
     sclrm,   &
 !+++ARH
   ! EDMF in/out
-    pblh, ustar, &                                       ! intent(inout)
+    pblh, mf_ustar, &                                    ! intent(inout)
     mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
     mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  & ! intent(inout)
     mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &        ! intent(inout)
@@ -697,7 +697,7 @@ contains
 !+++ARH
     ! EDMF inputs not otherwise in CLUBB variable list
     real( kind = core_rknd ), intent(inout) :: &
-      pblh, ustar
+      pblh, mf_ustar
 
     ! MKW EDMF outputs
     real( kind = core_rknd ), intent(inout), dimension(gr%nz) :: &
@@ -761,7 +761,7 @@ contains
       wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
       sclrm,   &
 !+++ARH
-      pblh, ustar, &                                          ! intent(inout)
+      pblh, mf_ustar, &                                       ! intent(inout)
       mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &           ! intent(inout)
       mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  &    ! intent(inout)
       mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &           ! intent(inout)

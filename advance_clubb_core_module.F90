@@ -1373,7 +1373,9 @@ module advance_clubb_core_module
                              sclrp2(1,1:sclr_dim),                           &      ! intent(out)
                              sclrprtp(1,1:sclr_dim),                         &      ! intent(out)
                              sclrpthlp(1,1:sclr_dim) )                              ! intent(out)
-
+!+++ARH
+                             ! MKW TODO: add ustar as output here?
+!---ARH
         if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
             err_code_out = err_code
