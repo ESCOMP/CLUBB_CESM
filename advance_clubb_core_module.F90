@@ -144,6 +144,7 @@ module advance_clubb_core_module
                wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &       ! intent(inout)
                sclrm,   &                                           ! intent(inout)
 !+++ARH
+               do_clubb_mf, &                                       ! intent(in)
                ! EDMF in/out
                pblh, mf_ustar, &                                    ! intent(inout) since pblh is modified; can change to in later
                mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
@@ -630,6 +631,8 @@ module advance_clubb_core_module
       edsclrm   ! Eddy passive scalar grid-mean (thermo. levels)   [units vary]
 
 !+++ARH
+    logical, intent(in) :: &
+      do_clubb_mf
     ! EDMF inputs not otherwise in CLUBB input list
     real( kind = core_rknd ), intent(inout) :: & 
       pblh, mf_ustar
@@ -855,8 +858,6 @@ module advance_clubb_core_module
     real( kind = core_rknd ), dimension(gr%nz) :: &
        rtm_forc_mf,  & ! rtm forcing due to mass-flux turbulent advection
        thlm_forc_mf ! thlm forcing due to mass-flux turbulent advection
-
-    logical :: do_edmf
 !---ARH
 
     !----- Begin Code -----
@@ -1435,8 +1436,7 @@ module advance_clubb_core_module
       !#######################################################################
       !##################### CALL EDMF DIAGNOSTIC PLUMES #####################
       !#######################################################################
-      do_edmf=.true.
-      if (do_edmf==.true.) then
+      if (do_clubb_mf==.true.) then
          nup=10
          call init_random_seed
          ! MKW 2020-02-10 Call edmf here -- idea is that we want to do it BEFORE mean field is advanced. May be problematic since not sure if pblh is set yet
@@ -1593,7 +1593,6 @@ module advance_clubb_core_module
 
 !+++ARH
       ! MKW 2020-02-18: instead of rtm_forcing and thlm_forcing, pass rtm_forc_mf and thlm_forc_mf
-      ! ARH 2020-08-11: since xx_forc_mf=0 for do_edmf=.false., no explicit terms, i.e., CLUBB is broken?
 !---ARH
       call advance_xm_wpxp( dt, sigma_sqd_w, wm_zm, wm_zt, wp2,              & ! intent(in)
                             Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm, & ! intent(in)

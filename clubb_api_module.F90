@@ -503,6 +503,7 @@ contains
     wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
     sclrm,   &
 !+++ARH
+    do_clubb_mf, &                                       ! intent(in)
   ! EDMF in/out
     pblh, mf_ustar, &                                    ! intent(inout)
     mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
@@ -695,6 +696,8 @@ contains
       edsclrm   ! Eddy passive scalar mean (thermo. levels)   [units vary]
 
 !+++ARH
+    logical, intent(in) :: &
+      do_clubb_mf
     ! EDMF inputs not otherwise in CLUBB variable list
     real( kind = core_rknd ), intent(inout) :: &
       pblh, mf_ustar
@@ -761,6 +764,7 @@ contains
       wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
       sclrm,   &
 !+++ARH
+      do_clubb_mf, &                                          ! intent(in)
       pblh, mf_ustar, &                                       ! intent(inout)
       mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &           ! intent(inout)
       mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  &    ! intent(inout)
