@@ -1,13 +1,57 @@
 module edmf_module
 
+  use clubb_precision, only: core_rknd
+
   implicit none
 
+  !public :: clubb_mf_readnl, &
   public :: integrate_mf, &
             init_random_seed
 
   private
 
+  !real(kind=core_rknd) :: clubb_mf_L0
+  !real(kind=core_rknd) :: clubb_mf_wa
+  !real(kind=core_rknd) :: clubb_mf_wb
+
 contains
+
+!subroutine clubb_mf_readnl(nlfile)
+!
+!   use spmd_utils,      only: mpicom, masterproc, masterprocid, mpi_real8
+!   use namelist_utils,  only: find_group_name
+!   use units,           only: getunit, freeunit
+!
+!   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+!
+!   ! Local variables
+!   integer :: unitn, ierr
+!   character(len=*), parameter :: subname = 'clubb_mf_readnl'
+!
+!   namelist /clubb_mf_nl/ clubb_mf_L0, clubb_mf_wa, clubb_mf_wb 
+!   !-----------------------------------------------------------------------------
+!
+!   if (masterproc) then
+!      unitn = getunit()
+!      open( unitn, file=trim(nlfile), status='old' )
+!      call find_group_name(unitn, 'clubb_mf_nl', status=ierr)
+!      if (ierr == 0) then
+!         read(unitn, clubb_mf_nl, iostat=ierr)
+!         if (ierr /= 0) then
+!            call endrun(subname // ':: ERROR reading namelist')
+!         end if
+!      end if
+!      close(unitn)
+!      call freeunit(unitn)
+!
+!   end if
+!
+!   ! Broadcast namelist variables
+!   call mpi_bcast(clubb_mf_L0,      1, mpi_real8,   masterprocid, mpicom, ierr)
+!   call mpi_bcast(clubb_mf_wa,      1, mpi_real8,   masterprocid, mpicom, ierr)
+!   call mpi_bcast(clubb_mf_wb,      1, mpi_real8,   masterprocid, mpicom, ierr)
+!
+!end subroutine clubb_mf_readnl
 
 ! =============================================================================== !
 !  Eddy-diffusivity mass-flux routine                                             !
@@ -42,7 +86,6 @@ subroutine integrate_mf( nz,  dt,   zt,  dzt,   p,  iexner,                     
 !  upa,upw,upqt,... kts:kte+1
 !  dry_a,moist_a,dry_w,moist_w, ... kts:kte+1
 
-     use clubb_precision, only: core_rknd ! Variable(s)
      use physconst,       only: rair, cpair, gravit, latvap, latice, zvir
 
 
@@ -82,8 +125,12 @@ subroutine integrate_mf( nz,  dt,   zt,  dzt,   p,  iexner,                     
 
      ! w parameters
      real(kind=core_rknd),parameter          :: &
+!+++ARH
                                                 wa = 1., &
                                                 wb = 1.5
+                                                !wa = clubb_mf_wa, &
+                                                !wb = clubb_mf_wb
+!---ARH
 
      ! entrainment parameters
      real(kind=core_rknd),parameter          :: &
@@ -93,7 +140,10 @@ subroutine integrate_mf( nz,  dt,   zt,  dzt,   p,  iexner,                     
                                                 !ENT0 = .8
                                                 !L0   = 100.,&
                                                 !ENT0 = .42
+!+++ARH
                                                 L0   = 50.,&
+                                                !L0   = clubb_mf_L0, &
+!---ARH
                                                 ENT0 = .22
                                                 !L0   = 50.,&
                                                 !ENT0 = .18
@@ -382,7 +432,6 @@ subroutine condensation_mf( qt, thl, p, iex, thv, qc, th, ql, qi)
 !
 ! zero or one condensation for edmf: calculates thv and qc
 !
-     use clubb_precision, only: core_rknd ! Variable(s)
      use physconst,       only: cpair, zvir
      use wv_saturation,      only : qsat
 
@@ -433,7 +482,6 @@ subroutine condensation_mf( qt, thl, p, iex, thv, qc, th, ql, qi)
      contains
 
      function get_watf(t)
-       use clubb_precision, only: core_rknd ! Variable(s)
        real(kind=core_rknd) :: t,get_watf,tc
        real(kind=core_rknd), parameter :: &
        tmax=-10., &
@@ -453,7 +501,6 @@ subroutine condensation_mf( qt, thl, p, iex, thv, qc, th, ql, qi)
 
 
      function get_alhl(wf)
-       use clubb_precision, only: core_rknd ! Variable(s)
      !latent heat of the mixture based on water fraction
        use physconst,        only : latvap , latice
        real(kind=core_rknd) :: get_alhl,wf
@@ -465,7 +512,6 @@ subroutine condensation_mf( qt, thl, p, iex, thv, qc, th, ql, qi)
 end subroutine condensation_mf
 
 subroutine Poisson(istart,iend,jstart,jend,mu,poi)
-       use clubb_precision, only: core_rknd ! Variable(s)
        integer, intent(in) :: istart,iend,jstart,jend
        real(kind=core_rknd), dimension(istart:iend,jstart:jend),intent(in) :: mu
        integer, dimension(istart:iend,jstart:jend), intent(out) :: poi
@@ -579,8 +625,6 @@ subroutine random_Poisson(mu,first,ival)
 !     TABLES: COEFFICIENTS A0-A7 FOR STEP F. FACTORIALS FACT
 !     COEFFICIENTS A(K) - FOR PX = FK*V*V*SUM(A(K)*V**K)-DEL
 !     SEPARATION OF CASES A AND B
-  use clubb_precision, only: &
-    core_rknd ! Variable(s)
 
 !     .. Scalar Arguments ..
 	REAL(kind=core_rknd), INTENT(IN)    :: mu
@@ -790,8 +834,6 @@ full_init = .false.
 
 	!  The algorithm uses the ratio of uniforms method of A.J. Kinderman
 	!  and J.F. Monahan augmented with quadratic bounding curves.
-  use clubb_precision, only: &
-    core_rknd ! Variable(s)
 	REAL(kind=core_rknd) :: fn_val
 
 	!     Local variables
@@ -837,8 +879,6 @@ full_init = .false.
 	! FUNCTION GENERATES A RANDOM VARIATE IN [0,INFINITY) FROM
 	! A NEGATIVE EXPONENTIAL DlSTRIBUTION WlTH DENSITY PROPORTIONAL
 	! TO EXP(-random_exponential), USING INVERSION.
-  use clubb_precision, only: &
-    core_rknd ! Variable(s)
 	REAL(kind=core_rknd)  :: fn_val
 
 	!     Local variable
