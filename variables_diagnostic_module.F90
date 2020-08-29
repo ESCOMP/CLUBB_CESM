@@ -43,9 +43,7 @@ module variables_diagnostic_module
     thlm_ref,       & ! Initial liquid water potential temperature   [K]
     rtm_ref,        & ! Initial total water mixing ratio             [kg/kg]
     thvm,           & ! Virtual potential temperature                [K]
-!+++ARH
-    thm               ! Potential temperature for EDMF               [K]
-!---ARH
+    thm               ! Potential temperature for MF                 [K]
 
 !!! Important Note !!!
 ! Do not indent the omp comments, they need to be in the first 4 columns
@@ -273,9 +271,7 @@ module variables_diagnostic_module
     allocate( thlm_ref(1:nz) )       ! Reference liquid water potential for nudging
     allocate( rtm_ref(1:nz) )        ! Reference total water mixing ratio for nudging
     allocate( thvm(1:nz) )           ! Virtual potential temperature
-!+++ARH
     allocate( thm(1:nz) )            ! Potential temperature added by MKW
-!---ARH
 
     allocate( rsat(1:nz) )       ! Saturation mixing ratio  ! Brian
 

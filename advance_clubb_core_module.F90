@@ -143,9 +143,8 @@ module advance_clubb_core_module
                thlm, rtm, wprtp, wpthlp, &                          ! intent(inout)
                wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &       ! intent(inout)
                sclrm,   &                                           ! intent(inout)
-!+++ARH
+               ! MF in/out
                do_clubb_mf, &                                       ! intent(in)
-               ! EDMF in/out
                pblh, mf_ustar, &                                    ! intent(inout) since pblh is modified; can change to in later
                mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
                mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  & ! intent(inout)
@@ -153,8 +152,8 @@ module advance_clubb_core_module
                mf_moist_qc, mf_thlflx, mf_qtflx,  &                 ! intent(inout)
                s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, &       ! intent(inout)
                s_awu, s_awv, &                                      ! intent(inout)
+               edmf_enti, &
                ! back to CLUBB stuff
-!---ARH
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16            ! intent(inout)
 #endif
@@ -276,9 +275,7 @@ module advance_clubb_core_module
 
     use variables_diagnostic_module, only: &
       thvm, &
-!+++ARH
       thm, &
-!---ARH
       em, &
       Lscale, &
       Lscale_up,  &
@@ -465,11 +462,8 @@ module advance_clubb_core_module
     use interpolation, only: &
       pvertinterp
 
-!+++ARH
     use edmf_module, only: &
-      integrate_mf, &  
-      init_random_seed 
-!---ARH
+      integrate_mf 
 
     implicit none
 
@@ -630,14 +624,14 @@ module advance_clubb_core_module
     real( kind = core_rknd ), intent(inout), dimension(gr%nz,edsclr_dim) :: &
       edsclrm   ! Eddy passive scalar grid-mean (thermo. levels)   [units vary]
 
-!+++ARH
+    ! MF inputs not otherwise in CLUBB input list
     logical, intent(in) :: &
       do_clubb_mf
-    ! EDMF inputs not otherwise in CLUBB input list
+
     real( kind = core_rknd ), intent(inout) :: & 
       pblh, mf_ustar
 
-    ! EDMF outputs
+    ! MF outputs
     ! mf_* are diagnostic variables
     ! s_* are integrated plume fluxes for calculating MF contribution to total tendencies
     real( kind = core_rknd ), intent(inout), dimension(gr%nz) :: &
@@ -656,12 +650,11 @@ module advance_clubb_core_module
       s_awql,  & ! sum(a_i * w_i * ql_i) [(kg/kg) m/s]
       s_awqi,  & ! sum(a_i * w_i * qi_i) [(kg/kg) m/s]
       s_awu,   & ! sum(a_i * w_i * u_i) [m^2/s^2]
-      s_awv      ! sum(a_i * w_i * v_i) [m^2/s^2]
-      ! MKW TODO: add s_awqt to this list?
-      ! MKW NOTE: in all cases, to get a mass flux turbulent flux term:
+      s_awv,   & ! sum(a_i * w_i * v_i) [m^2/s^2]
+      edmf_enti
+      !     in all cases, to get a mass flux turbulent flux term:
       !             <w'phi'> = s_awphi - s_aw*phim_zm
       !     where phim_zm = {thlm,qtm,rcm} interpolated to momentum levels
-!---ARH
 
     ! Variables that need to be output for use in other parts of the CLUBB
     ! code, such as microphysics (rcm, pdf_params), forcings (rcm), and/or
@@ -705,9 +698,8 @@ module advance_clubb_core_module
     ! Local Variables
     integer :: i, k
 
-!+++ARH
-    integer :: nup ! MKW NOTE: nup is an EDMF variable, number of updraft plumes
-!---ARH
+    ! nup is an MF variable, number of updraft plumes
+    integer :: nup
 
 #ifdef CLUBB_CAM
     integer ::  ixind
@@ -854,11 +846,10 @@ module advance_clubb_core_module
     integer, intent(out) :: &
       err_code_out  ! Error code indicator
 
-!+++ARH
+    ! rtm,thlm forcing due to mass-flux turbulent advection
     real( kind = core_rknd ), dimension(gr%nz) :: &
-       rtm_forc_mf,  & ! rtm forcing due to mass-flux turbulent advection
-       thlm_forc_mf ! thlm forcing due to mass-flux turbulent advection
-!---ARH
+       rtm_forc_mf,  &
+       thlm_forc_mf
 
     !----- Begin Code -----
     
@@ -1150,9 +1141,9 @@ module advance_clubb_core_module
 
       thvm = calculate_thvm( thlm, rtm, rcm, exner, thv_ds_zt )
 
-!+++ARH
-      thm  = thlm +  Lv * rcm / (Cp*exner) ! MKW added; consistent with thlm2T_in_K
-!---ARH
+      ! thm needed for MF, consistent with thlm2T_in_K
+      thm  = thlm +  Lv * rcm / (Cp*exner)
+
       !----------------------------------------------------------------
       ! Compute tke (turbulent kinetic energy)
       !----------------------------------------------------------------
@@ -1380,9 +1371,7 @@ module advance_clubb_core_module
                              sclrp2(1,1:sclr_dim),                           &      ! intent(out)
                              sclrprtp(1,1:sclr_dim),                         &      ! intent(out)
                              sclrpthlp(1,1:sclr_dim) )                              ! intent(out)
-!+++ARH
-                             ! MKW TODO: add ustar as output here?
-!---ARH
+
         if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
             err_code_out = err_code
@@ -1432,15 +1421,14 @@ module advance_clubb_core_module
 
       end if ! gr%zm(1) == sfc_elevation
 
-!+++ARH
       !#######################################################################
-      !##################### CALL EDMF DIAGNOSTIC PLUMES #####################
+      !###################### CALL MF DIAGNOSTIC PLUMES ######################
       !#######################################################################
       if (do_clubb_mf==.true.) then
          nup=10
-         call init_random_seed
-         ! MKW 2020-02-10 Call edmf here -- idea is that we want to do it BEFORE mean field is advanced. May be problematic since not sure if pblh is set yet
-         call integrate_mf( gr%nz,   dt,          gr%zt,      gr%dzt,      &
+
+         ! MKW: idea is that we want to compute MF BEFORE mean field is advanced. May be problematic since not sure if pblh is set yet
+         call integrate_mf( gr%nz,     gr%zt,      gr%dzt,      &
                             p_in_Pa,   exner,       nup,        um,    vm,   &
                             thm,       thlm, thlm_zm,  thvm,    rtm, rtm_zm, &
                             mf_ustar,     wpthlp_sfc,  wprtp_sfc,  pblh,  rcm,  & ! ustar and pblh are not computed until end of timestep
@@ -1448,10 +1436,11 @@ module advance_clubb_core_module
                             mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,              &
                             mf_dry_u,  mf_moist_u,  mf_dry_v,   mf_moist_v,   mf_moist_qc, &
                             s_ae,      s_aw,        s_awthl,    s_awqt,       s_awql,      &
-                            s_awqi,    s_awu,       s_awv,      mf_thlflx,    mf_qtflx  )
+                            s_awqi,    s_awu,       s_awv,      mf_thlflx,    mf_qtflx,    &
+                            edmf_enti )
 
-         ! MKW TODO: do we need to couple s_awql, s_awqi to CLUBB? clear yet.
          ! pass EDMF turbulent advection term as CLUBB explicit forcing term
+         ! MKW: do we need to couple s_awql, s_awqi to CLUBB? Not clear yet.
          rtm_forc_mf(1) = rtm_forcing(1)
          thlm_forc_mf(1) = thlm_forcing(1)
          do k=2, gr%nz
@@ -1464,9 +1453,6 @@ module advance_clubb_core_module
            rcm(k) = rcm(k)*s_ae(k)+mf_moist_a(k)*mf_moist_qc(k)
            cloud_frac(k)  = cloud_frac(k)*s_ae(k) +mf_moist_a(k)
          end do
-         !print *,'s_awqt:',s_awqt
-         !print *,'s_aw:',s_aw
-         !print *,'thlm_zm:',thlm_zm
       else
          mf_dry_a(:) = 0.
          mf_moist_a(:) = 0.
@@ -1491,11 +1477,11 @@ module advance_clubb_core_module
          s_awv(:) = 0.
          mf_thlflx(:) = 0.
          mf_qtflx(:) = 0.
+         edmf_enti(:) = 0.
 
          rtm_forc_mf(:)=rtm_forcing(:)
          thlm_forc_mf(:)=thlm_forcing(:)
       end if
-!---ARH
 
       !#######################################################################
       !############## ADVANCE PROGNOSTIC VARIABLES ONE TIMESTEP ##############
@@ -1591,20 +1577,13 @@ module advance_clubb_core_module
       !   by one time step.
       ! advance_xm_wpxp_bad_wp2 ! Test error comment, DO NOT modify or move
 
-!+++ARH
       ! MKW 2020-02-18: instead of rtm_forcing and thlm_forcing, pass rtm_forc_mf and thlm_forc_mf
-!---ARH
+      ! When MF is off, the xxx_forc_mf terms reduce to the xxx_forcing terms
       call advance_xm_wpxp( dt, sigma_sqd_w, wm_zm, wm_zt, wp2,              & ! intent(in)
                             Lscale, wp3_on_wp2, wp3_on_wp2_zt, Kh_zt, Kh_zm, & ! intent(in)
-!+++ARH
-                            !tau_C6_zm, Skw_zm, wp2rtp, rtpthvp, rtm_forcing, & ! intent(in)
                             tau_C6_zm, Skw_zm, wp2rtp, rtpthvp, rtm_forc_mf, & ! intent(in)
-!---ARH
                             wprtp_forcing, rtm_ref, wp2thlp, thlpthvp,       & ! intent(in)
-!+++ARH
-                            !thlm_forcing, wpthlp_forcing, thlm_ref,          & ! intent(in)
                             thlm_forc_mf, wpthlp_forcing, thlm_ref,          & ! intent(in)
-!---ARH
                             rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,           & ! intent(in)
                             invrs_rho_ds_zt, thv_ds_zm, rtp2, thlp2,         & ! intent(in)
                             w_1_zm, w_2_zm, varnce_w_1_zm, varnce_w_2_zm,    & ! intent(in)

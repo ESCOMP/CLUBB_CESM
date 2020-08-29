@@ -173,6 +173,12 @@ module parameters_tunable
     C_invrs_tau_N2_wpxp       = 0.0_core_rknd,  &   !
     C_invrs_tau_N2_clear_wp3  = 0.0_core_rknd
 
+  real( kind = core_rknd ), public ::  &
+    mf_L0                     = 50.0_core_rknd, &   !
+    mf_ent0                   = 0.22_core_rknd, &   !
+    mf_wa                     = 1.0_core_rknd,  &   !
+    mf_wb                     = 1.5_core_rknd
+
 !$omp threadprivate(C_invrs_tau_bkgnd,C_invrs_tau_sfc)
 !$omp threadprivate(C_invrs_tau_shear,C_invrs_tau_N2)  
 !$omp threadprivate(C_invrs_tau_N2_wp2,C_invrs_tau_N2_xp2) 
@@ -304,7 +310,8 @@ module parameters_tunable
     thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
     C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
     C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-    C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3
+    C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+    mf_L0, mf_ent0, mf_wa, mf_wb
 
   ! These are referenced together often enough that it made sense to
   ! make a list of them.  Note that lmin_coef is the input parameter,
@@ -361,7 +368,9 @@ module parameters_tunable
        "C_invrs_tau_sfc             ", "C_invrs_tau_shear           ", &
        "C_invrs_tau_N2              ", "C_invrs_tau_N2_wp2          ", &
        "C_invrs_tau_N2_xp2          ", "C_invrs_tau_N2_wpxp         ", &
-       "C_invrs_tau_N2_clear_wp3    "  /)
+       "C_invrs_tau_N2_clear_wp3    ", &
+       "mf_L0                       ", "mf_ent0                     ", &
+       "mf_wa                       ", "mf_wb                       "/)
 
   real( kind = core_rknd ), parameter, private :: &
     init_value = -999._core_rknd ! Initial value for the parameters, used to detect missing values
@@ -414,7 +423,11 @@ module parameters_tunable
     clubb_C_invrs_tau_N2_xp2,      &
     clubb_C_invrs_tau_N2_wpxp,     &
     clubb_C_invrs_tau_N2_clear_wp3,&
-    clubb_C_wp2_splat
+    clubb_C_wp2_splat,             &
+    clubb_mf_L0,                   &
+    clubb_mf_ent0,                 &
+    clubb_mf_wa,                   &
+    clubb_mf_wb
 #endif /*E3SM*/
 
   contains
@@ -542,8 +555,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, & 
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3 )
-
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb )
 
     ! It was decided after some experimentation, that the best
     ! way to produce grid independent results is to set lmin to be
@@ -1024,7 +1037,11 @@ module parameters_tunable
     clubb_C_invrs_tau_N2_xp2,      &
     clubb_C_invrs_tau_N2_wpxp,     &
     clubb_C_invrs_tau_N2_clear_wp3,&
-    clubb_C_wp2_splat
+    clubb_C_wp2_splat,             &
+    clubb_mf_L0,                   &
+    clubb_mf_ent0,                 &
+    clubb_mf_wa,                   &
+    clubb_mf_wb
 
     integer :: read_status
     integer :: iunit
@@ -1074,6 +1091,10 @@ module parameters_tunable
     clubb_C_invrs_tau_N2_wpxp = init_value
     clubb_C_invrs_tau_N2_clear_wp3 = init_value
     clubb_C_wp2_splat = init_value
+    clubb_mf_L0 = init_value
+    clubb_mf_ent0 = init_value
+    clubb_mf_wa = init_value
+    clubb_mf_wb = init_value
 
     if (masterproc) then
       iunit = getunit()
@@ -1130,6 +1151,10 @@ module parameters_tunable
    call mpibcast(clubb_C_invrs_tau_N2_wpxp , 1, mpir8,  0, mpicom)
    call mpibcast(clubb_C_invrs_tau_N2_clear_wp3 , 1, mpir8,  0, mpicom)
    call mpibcast(clubb_C_wp2_splat, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_mf_L0,   1, mpir8,  0, mpicom)
+   call mpibcast(clubb_mf_ent0, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_mf_wa,   1, mpir8,  0, mpicom)
+   call mpibcast(clubb_mf_wb,   1, mpir8,  0, mpicom)
 #endif
 
 
@@ -1247,6 +1272,10 @@ module parameters_tunable
     if (clubb_C_invrs_tau_N2_clear_wp3 /= init_value) &
        C_invrs_tau_N2_clear_wp3 = clubb_C_invrs_tau_N2_clear_wp3
     if (clubb_C_wp2_splat  /= init_value ) C_wp2_splat = clubb_C_wp2_splat
+    if (clubb_mf_L0  /= init_value ) mf_L0 = clubb_mf_L0
+    if (clubb_mf_ent0  /= init_value ) mf_ent0 = clubb_mf_ent0
+    if (clubb_mf_wa  /= init_value ) mf_wa = clubb_mf_wa
+    if (clubb_mf_wb  /= init_value ) mf_wb = clubb_mf_wb
 #endif /*E3SM*/
 
     ! Put the variables in the output array
@@ -1269,7 +1298,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, &
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &  
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, params )
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb, params )
 
     l_error = .false.
 
@@ -1349,7 +1379,8 @@ module parameters_tunable
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
       C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
       C_invrs_tau_shear, C_invrs_tau_N2, &
-      C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3
+      C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+      mf_L0, mf_ent0, mf_wa, mf_wb
 
     ! Initialize values to -999.
     call init_parameters_999( )
@@ -1381,7 +1412,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, &
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, param_max )
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb, param_max )
 
     l_error = .false.
 
@@ -1433,7 +1465,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, &
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, params )
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb, params )
 
     ! Description:
     ! Takes the list of scalar variables and puts them into a 1D vector.
@@ -1535,6 +1568,10 @@ module parameters_tunable
       iC_invrs_tau_N2_xp2, &
       iC_invrs_tau_N2_wpxp, &
       iC_invrs_tau_N2_clear_wp3, &
+      imf_L0, &
+      imf_ent0, &
+      imf_wa, &
+      imf_wb, &
       nparams
 
     implicit none
@@ -1557,7 +1594,8 @@ module parameters_tunable
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
       C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
       C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-      C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3
+      C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+      mf_L0, mf_ent0, mf_wa, mf_wb
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
@@ -1660,7 +1698,10 @@ module parameters_tunable
     params(iC_invrs_tau_N2_xp2)       = C_invrs_tau_N2_xp2
     params(iC_invrs_tau_N2_wpxp)      = C_invrs_tau_N2_wpxp
     params(iC_invrs_tau_N2_clear_wp3) = C_invrs_tau_N2_clear_wp3
-
+    params(imf_L0)   = mf_L0
+    params(imf_ent0) = mf_ent0
+    params(imf_wa)   = mf_wa
+    params(imf_wb)   = mf_wb
 
     return
   end subroutine pack_parameters
@@ -1686,7 +1727,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, & 
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3  )
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb )
 
     ! Description:
     ! Takes the 1D vector and returns the list of scalar variables.
@@ -1788,6 +1830,10 @@ module parameters_tunable
       iC_invrs_tau_N2_xp2, &
       iC_invrs_tau_N2_wpxp, &
       iC_invrs_tau_N2_clear_wp3, &
+      imf_L0, &
+      imf_ent0, &
+      imf_wa, &
+      imf_wb, &
       nparams
 
     implicit none
@@ -1813,7 +1859,8 @@ module parameters_tunable
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
       C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
       C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-      C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3
+      C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+      mf_L0, mf_ent0, mf_wa, mf_wb
 
     C1      = params(iC1)
     C1b     = params(iC1b)
@@ -1914,6 +1961,11 @@ module parameters_tunable
     C_invrs_tau_N2_wpxp      = params(iC_invrs_tau_N2_wpxp)
     C_invrs_tau_N2_clear_wp3 = params(iC_invrs_tau_N2_clear_wp3)
 
+    mf_L0   = params(imf_L0)
+    mf_ent0 = params(imf_ent0)
+    mf_wa   = params(imf_wa)
+    mf_wb   = params(imf_wb)
+
     return
   end subroutine unpack_parameters
 
@@ -1951,7 +2003,8 @@ module parameters_tunable
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
                C_invrs_tau_shear, C_invrs_tau_N2, &
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
-               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, params )
+               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
+               mf_L0, mf_ent0, mf_wa, mf_wb, params )
 
     return
 
@@ -2057,6 +2110,10 @@ module parameters_tunable
     C_invrs_tau_N2_wp2           = init_value
     C_invrs_tau_N2_wpxp          = init_value
     C_invrs_tau_N2_clear_wp3     = init_value
+    mf_L0                        = init_value
+    mf_ent0                      = init_value
+    mf_wa                        = init_value
+    mf_wb                        = init_value
 
     return
 

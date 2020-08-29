@@ -629,9 +629,9 @@ module adg1_adg2_3d_luhar_pdf
       varnce_w_2, & ! Variance of w (2nd PDF component)            [m^2/s^2]
       mixt_frac     ! Mixture fraction                             [-]
 
-!+++ARH
-   logical fix_mixt ! MKW 2020-07-06: added flag to ensure that CLUBB still calculates mixt_frac when we want it to
-!---ARH
+   ! MKW 2020-07-06: added flag to ensure that CLUBB still calculates mixt_frac when we want it to
+   ! If true, CLUBB only uses one Gaussian.
+   logical fix_mixt
 
     !----- Begin Code -----
 
@@ -648,13 +648,11 @@ module adg1_adg2_3d_luhar_pdf
        ! is negative skewness of w (Sk_w < 0 because w'^3 < 0),
        ! 0.5 < mixt_frac < 1, and the 1st PDF component has greater weight than
        ! does the 2nd PDF component.
-!+++ARH
+
      fix_mixt = .false.
      if (fix_mixt) then
-       ! MKW down the rabbit hole we go. Hardwiring CLUBB to use only one Gaussian.
        mixt_frac = one
      else
-!---ARH
        if ( abs( Skw ) <= 1.0e-5_core_rknd ) then
           mixt_frac = one_half
        else
@@ -662,9 +660,7 @@ module adg1_adg2_3d_luhar_pdf
           = one_half &
             * ( one - Skw / sqrt( four * ( one - sigma_sqd_w )**3 + Skw**2 ) )
        endif
-!+++ARH
      endif  
-!---ARH
        ! Clip mixt_frac, and 1 - mixt_frac, to avoid dividing by a small number.
        ! Formula for mixt_frac_max_mag =
        ! 1 - ( 1/2 * ( 1 - Skw_max

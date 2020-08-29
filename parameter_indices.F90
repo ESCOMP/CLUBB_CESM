@@ -26,7 +26,7 @@ module parameter_indices
   private ! Default Scope
 
   integer, parameter, public ::  & 
-    nparams = 86 ! Total tunable parameters
+    nparams = 90 ! Total tunable parameters
 
 !***************************************************************
 !                    ***** IMPORTANT *****
@@ -130,6 +130,11 @@ module parameter_indices
     iC_invrs_tau_N2_wpxp          = 85, &
     iC_invrs_tau_N2_clear_wp3     = 86 
 
+  integer, parameter, public :: &
+    imf_L0   = 87, &
+    imf_ent0 = 88, &
+    imf_wa   = 89, &
+    imf_wb   = 90
 
 end module parameter_indices
 !-----------------------------------------------------------------------

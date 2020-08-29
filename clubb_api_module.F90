@@ -151,7 +151,8 @@ module clubb_api_module
     ilambda0_stability_coef, imult_coef, itaumin, itaumax, imu, &
     iLscale_mu_coef, iLscale_pert_coef, ialpha_corr, iSkw_denom_coef, &
     ic_K10, ic_K10h, ithlp2_rad_coef, ithlp2_rad_cloud_frac_thresh, &
-    iup2_vp2_factor, iSkw_max_mag
+    iup2_vp2_factor, iSkw_max_mag, &
+    imf_L0, imf_ent0, imf_wa, imf_wb
 
   use pdf_parameter_module, only : &
 ! The CLUBB_CAM preprocessor directives are being commented out because this
@@ -248,9 +249,8 @@ module clubb_api_module
         ilambda0_stability_coef, imult_coef, itaumin, itaumax, imu, &
         iLscale_mu_coef, iLscale_pert_coef, ialpha_corr, iSkw_denom_coef, &
         ic_K10, ic_K10h, ithlp2_rad_coef, ithlp2_rad_cloud_frac_thresh, &
-        iup2_vp2_factor, iSkw_max_mag
-
-
+        iup2_vp2_factor, iSkw_max_mag, &
+        imf_L0, imf_ent0, imf_wa, imf_wb
 
   public &
     advance_clubb_core_api, &
@@ -502,9 +502,8 @@ contains
     thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
     wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
     sclrm,   &
-!+++ARH
+  ! MF in/out
     do_clubb_mf, &                                       ! intent(in)
-  ! EDMF in/out
     pblh, mf_ustar, &                                    ! intent(inout)
     mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &        ! intent(inout)
     mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  & ! intent(inout)
@@ -512,8 +511,8 @@ contains
     mf_moist_qc, mf_thlflx, mf_qtflx,  &                 ! intent(inout)
     s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, &       ! intent(inout)
     s_awu, s_awv, &                                      ! intent(inout)
+    edmf_enti, &
   ! back to CLUBB stuff
-!---ARH
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16    ! intent(inout)
 #endif
@@ -695,21 +694,21 @@ contains
     real( kind = core_rknd ), intent(inout), dimension(gr%nz,edsclr_dim) :: &
       edsclrm   ! Eddy passive scalar mean (thermo. levels)   [units vary]
 
-!+++ARH
+    ! MF inputs not otherwise in CLUBB variable list
     logical, intent(in) :: &
       do_clubb_mf
-    ! EDMF inputs not otherwise in CLUBB variable list
+
     real( kind = core_rknd ), intent(inout) :: &
       pblh, mf_ustar
 
-    ! MKW EDMF outputs
+    ! MF outputs
     real( kind = core_rknd ), intent(inout), dimension(gr%nz) :: &
       mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &
       mf_dry_qt, mf_moist_qt, mf_dry_thl, mf_moist_thl,  &
       mf_dry_u, mf_moist_u, mf_dry_v, mf_moist_v, &
       mf_moist_qc, mf_thlflx, mf_qtflx,  &
-      s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, s_awu, s_awv
-!---ARH
+      s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, s_awu, s_awv, &
+      edmf_enti
 
     real( kind = core_rknd ), intent(out), dimension(gr%nz) ::  &
       rcm_in_layer, & ! rcm in cloud layer                              [kg/kg]
@@ -763,7 +762,6 @@ contains
       thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
       wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
       sclrm,   &
-!+++ARH
       do_clubb_mf, &                                          ! intent(in)
       pblh, mf_ustar, &                                       ! intent(inout)
       mf_dry_a, mf_moist_a, mf_dry_w, mf_moist_w, &           ! intent(inout)
@@ -772,7 +770,7 @@ contains
       mf_moist_qc, mf_thlflx, mf_qtflx,  &                    ! intent(inout)
       s_ae, s_aw, s_awthl, s_awqt, s_awql, s_awqi, &          ! intent(inout)
       s_awu, s_awv, &                                         ! intent(inout)
-!---ARH
+      edmf_enti, &
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16      ! intent(inout)
 #endif
